@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Guessing - Brute Force</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #090d18;
+            color: #e5e7eb;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 460px;
+            padding: 28px;
+            text-align: center;
+            background: #151c2c;
+            border: 1px solid #293449;
+            border-radius: 14px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #a5b4fc;
+        }
+
+        p {
+            color: #aab4c5;
+            line-height: 1.5;
+        }
+
+        label {
+            display: block;
+            margin-top: 22px;
+            color: #e5e7eb;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            margin-top: 8px;
+            padding: 12px;
+            border: 1px solid #3b4963;
+            border-radius: 8px;
+            outline: none;
+            background: #0d1422;
+            color: #ffffff;
+            font-size: 22px;
+            text-align: center;
+            letter-spacing: 8px;
+        }
+
+        input:focus {
+            border-color: #818cf8;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 14px;
+            padding: 12px;
+            border: 0;
+            border-radius: 8px;
+            background: #6366f1;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #4f46e5;
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .info {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .info div {
+            flex: 1;
+            padding: 14px 8px;
+            border: 1px solid #293449;
+            border-radius: 8px;
+            background: #0d1422;
+            color: #aab4c5;
+        }
+
+        .info strong {
+            display: block;
+            margin-top: 6px;
+            color: #a5b4fc;
+            font-size: 22px;
+        }
+
+        #message {
+            min-height: 28px;
+            color: #c7d2fe;
+            font-weight: bold;
+        }
+
+        .progress {
+            height: 12px;
+            margin: 12px 0;
+            overflow: hidden;
+            border-radius: 20px;
+            background: #293449;
+        }
+
+        #bar {
+            width: 0%;
+            height: 100%;
+            background: #818cf8;
+            transition: width 0.1s;
+        }
+
+        #log {
+            min-height: 44px;
+            padding: 12px;
+            border: 1px solid #293449;
+            border-radius: 8px;
+            background: #0d1422;
+            color: #cbd5e1;
+            overflow-wrap: anywhere;
+        }
+
+        .small {
+            margin-bottom: 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <h1>Password Guessing</h1>
+        <p>
+            Enter a 3-digit PIN. The computer will try every PIN
+            from 000 to 999 until it finds the correct one.
+        </p>
+
+        <!-- User enters a sample PIN for this local demonstration -->
+        <label for="pin">Enter a 3-digit PIN</label>
+        <input id="pin" type="password" inputmode="numeric"
+               maxlength="3" placeholder="000">
+
+        <button id="start" onclick="startGuessing()">Start Brute Force</button>
+
+        <div class="info">
+            <div>
+                Attempts
+                <strong id="attempts">0</strong>
+            </div>
+            <div>
+                Current Guess
+                <strong id="guess">---</strong>
+            </div>
+        </div>
+
+        <div class="progress">
+            <div id="bar"></div>
+        </div>
+
+        <p id="message">Waiting to start...</p>
+        <div id="log">The guesses will appear here.</div>
+
+        <p class="small">
+            Educational demo only. This does not connect to or test real accounts.
+        </p>
+    </main>
+
+    <script>
+        // Prothome HTML er je je element gula JavaScript diye control korbo, segula dhore rakhlam
+        // pore bar bar document.getElementById() likhte hobe na
+
+        // User je PIN ta input dibe, oi input box ta ekhane nilam
+        const pinInput = document.getElementById("pin");
+
+        // Brute Force start korar button ta ekhane nilam
+        const startButton = document.getElementById("start");
+
+        // Koto bar PIN check kora hoyeche, oi number ta dekhanor element
+        const attemptsText = document.getElementById("attempts");
+
+        // Computer ekhon kon PIN ta try kortese, seta dekhanor element
+        const guessText = document.getElementById("guess");
+
+        // Search er status ba result ekhane show korbo
+        const message = document.getElementById("message");
+
+        // Last je PIN ta try kora hoyeche, seta ekhane show korbo
+        const log = document.getElementById("log");
+
+        // Progress bar ta update korar jonno ei element ta nilam
+        const bar = document.getElementById("bar");
+
+
+        // Ei function ta button e click korle kaj korbe
+        // Ei function er kaj holo 000 theke 999 porjonto PIN ekta ekta kore check kora
+        function startGuessing() {
+
+            // User input box e je PIN diyeche, seta niye nilam
+            const secretPin = pinInput.value;
+
+
+            // Ekhane check kortesi user thik 3 ta digit diyeche kina
+            // /^[0-9]{3}$/ mane sudhu 0 theke 9 porjonto digit hobe ebong digit thik 3 ta hote hobe
+            if (!/^[0-9]{3}$/.test(secretPin)) {
+
+                // PIN thik na hole user ke error message dekhab
+                message.textContent = "Please enter exactly 3 digits.";
+
+                // return diye function ekhanei bondho kore dicchi, jate vul input niye search na chole
+                return;
+            }
+
+
+            // Ekhane theke Brute Force Approach use kora hoyeche
+            // Computer 000 theke start kore 001, 002, 003 evabe ekta ekta kore PIN check korbe
+
+            // number diye computer kon number ta try korbe seta control korbo
+            // 0 diye start korchi, pore etake 000 format e dekhano hobe
+            let number = 0;
+
+            // Koybar PIN check kora holo, tar count rakhar jonno attempts variable
+            let attempts = 0;
+
+
+            // Search cholakalin abar button e click kora bondho rakhlam
+            startButton.disabled = true;
+
+            // Search cholakalin input box lock kore dilam, jate PIN change korte na pare
+            pinInput.disabled = true;
+
+
+            // Notun search start hole attempt count abar 0 kore dicchi
+            attemptsText.textContent = "0";
+
+            // Current guess ekhono start hoy nai, tai ager value clear kore dilam
+            guessText.textContent = "---";
+
+            // Search start howar message show korchi
+            message.textContent = "Searching...";
+
+            // Guess er log box e starting message show korchi
+            log.textContent = "Trying PINs...";
+
+            // Progress bar abar 0% theke start korchi
+            bar.style.width = "0%";
+
+
+            // setInterval er kaj holo nirdisto somoy por por vitore thaka code abar run kora
+            // ekhane proti 20 millisecond por ekta kore PIN check hobe
+            // tai user screen e computer er guess gula dekhte parbe
+            const timer = setInterval(function () {
+
+                // number ke 3 digit er PIN banacchi
+                // jemon number 7 hole String(number) hobe "7"
+                // padStart(3, "0") er karone seta "007" hoye jabe
+                const currentPin = String(number).padStart(3, "0");
+
+
+                // Protibar ekta PIN check korlei attempt 1 kore baracchi
+                attempts++;
+
+                // Notun attempt count website e update kore dekacchi
+                attemptsText.textContent = attempts;
+
+                // Computer ekhon je PIN ta try kortese seta screen e dekacchi
+                guessText.textContent = currentPin;
+
+                // Kon PIN ta ekhon try kora hocche, seta log box e dekacchi
+                log.textContent = "Latest attempt: " + currentPin;
+
+
+                // Ekhane progress bar er percentage calculate kortesi
+                // Mot PIN ache 1000 ta (000 theke 999)
+                // attempts ke 1000 diye vag kore 100 diye gun korle percentage pawa jay
+                bar.style.width = (attempts / 1000 * 100) + "%";
+
+
+                // Ekhane Brute Force er main checking part
+                // Computer je PIN ta guess korse, seta user er deya PIN er sathe milacchi
+                if (currentPin === secretPin) {
+
+                    // PIN mile gele setInterval bondho kore dicchi
+                    // clearInterval(timer) na dile computer porer PIN gulao check korte thakto
+                    clearInterval(timer);
+
+
+                    // Correct PIN pawa geche, tai success message dekacchi
+                    message.textContent = "PIN found: " + currentPin;
+
+                    // Log box e success message show korchi
+                    log.textContent = "Success! The correct PIN was found.";
+
+
+                    // Search sesh, tai button abar active kore dicchi
+                    startButton.disabled = false;
+
+                    // Input box abar active korchi, jate user chaile notun PIN dite pare
+                    pinInput.disabled = false;
+
+                    // Button er lekha change kore Try Again kore dicchi
+                    startButton.textContent = "Try Again";
+
+                } else {
+
+                    // Guess vul hole number 1 kore baracchi
+                    // tarpor interval er next run e porer PIN ta check hobe
+                    // jemon 000 vul hole number hobe 1, tarpor check hobe 001
+                    number++;
+                }
+
+            }, 20); // 20 millisecond por por ei function abar run hobe
+        }
+    </script>
+</body>
+</html>
