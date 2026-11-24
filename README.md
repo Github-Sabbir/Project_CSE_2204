@@ -3,7 +3,7 @@
 # PASSWORD GUESSING 
 
 # MOST___IMPORTANT
-This is an educational local simulation. It does not connect to or test real accounts.
+# This is an educational local simulation. It does not connect to or test real accounts.
 # ei ta sudu ekta demo orginaly use korar jonno kali linax er Hydra/John the Ripper er moto tools use kora lagbe !
 
 # How to run:
